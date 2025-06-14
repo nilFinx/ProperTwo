@@ -2,6 +2,9 @@
 
 ProperTree is a cross-platform GUI plist editor written using Python *(compatible with both 2.x and 3.x)* and Tkinter.
 
+## Extra features
+- [x] Don't expand everything when performing an OC snapshot, keep everything closed(Not going to be merged)
+
 ## Features
 
 - [x] Cross-platform - should work anywhere python and tkinter do
