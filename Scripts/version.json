@@ -1,4 +1,4 @@
 {
-    "version": "0.4.0",
-    "changes": "Merged CorpNewt's ProperTree, bumped to 0.4.0 to make it easier"
+    "version": "0.4.1",
+    "changes": "Added a new feature(clear a dict/array)"
 }
