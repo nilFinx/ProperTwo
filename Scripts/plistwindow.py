@@ -451,6 +451,7 @@ class PlistWindow(tk.Toplevel):
         self.saving = False
         self.adding_rows = False
         self.removing_rows = False
+        self.clearing_rows = False
         self.pasting_nodes = False
         self.alternating_colors = False
         self.reundoing = False
@@ -3450,6 +3451,45 @@ class PlistWindow(tk.Toplevel):
         self.update_children(parent)
         self.alternate_colors(start_with=new_target)
         self.removing_rows = False
+        
+    def clear_row(self,target=None):
+        # We can't remove rows if another operation is in progress
+        if self.clearing_rows: return
+        # Lock the new row operation to this instance
+        self.clearing_rows = True
+        if target is None or isinstance(target, tk.Event):
+            target = "" if not len(self._tree.selection()) else self._tree.selection()[0]
+        parent = self._tree.parent(target)
+        self.add_undo({
+            "type":"remove",
+            "cell":target,
+            "from":parent,
+            "index":self._tree.index(target)
+        })
+        # Retain the index of our selected node to select the new target
+        target_index = self._tree.get_children(parent).index(target)
+        if self.get_check_type(parent).lower() == "array": # Yes.
+            self.change_type(self.menu_code + " Array")
+            self.change_type(self.menu_code + " Dictionary")
+        else:
+            self.change_type(self.menu_code + " Dictionary")
+            self.change_type(self.menu_code + " Array")
+
+        # Figure out what's left - select the node at the same index if possible,
+        # the last index if not, and the parent if no other items
+        remaining = self._tree.get_children(parent)
+        new_target = parent if not len(remaining) else remaining[target_index] if target_index < len(remaining) else remaining[-1]
+        self.select(new_target,alternate=False)
+        self._ensure_edited()
+        # Check if the parent was an array/dict, and update counts
+        if parent == "":
+            self.clearing_rows = False
+            return
+        if self.get_check_type(parent).lower() == "array":
+            self.update_array_counts(parent)
+        self.update_children(parent)
+        self.alternate_colors(start_with=new_target)
+        self.clearing_rows = False
 
     ###                          ###
     # Treeview Data Helper Methods #
@@ -3839,13 +3879,17 @@ class PlistWindow(tk.Toplevel):
             if self.get_check_type(self.get_root_node()).lower() in ("array","dictionary"):
                 popup_menu.add_command(label="New top level entry{}".format(" (Cmd +)" if is_mac else ""), command=lambda:self.new_row(self.get_root_node()),accelerator=None if is_mac else "(Ctrl +)")
         else:
+            popup_menu.add_command(label="Move '{}'{}".format(self._tree.item(cell,"text")," (Cmd +)" if is_mac else ""),
+                command=lambda:self.new_row(cell),accelerator=None if is_mac else "(Ctrl +)")
             if self.get_check_type(cell).lower() in ("dictionary","array") and (self._tree.item(cell,"open") or not len(self._tree.get_children(cell))):
                 popup_menu.add_command(label="New child under '{}'{}".format(self._tree.item(cell,"text")," (Cmd +)" if is_mac else ""), command=lambda:self.new_row(cell),accelerator=None if is_mac else "(Ctrl +)")
                 popup_menu.add_command(label="New sibling of '{}'".format(self._tree.item(cell,"text")), command=lambda:self.new_row(cell,True))
                 popup_menu.add_command(label="Remove '{}' and any children{}".format(self._tree.item(cell,"text")," (Cmd -)" if is_mac else ""), command=lambda:self.remove_row(cell),accelerator=None if is_mac else "(Ctrl -)")
+                popup_menu.add_command(label="Remove any children inside '{}' {}".format(self._tree.item(cell,"text")," (Cmd -)" if is_mac else ""), command=lambda:self.clear_row(cell),accelerator=None if is_mac else "(Ctrl -)")
             else:
                 popup_menu.add_command(label="New sibling of '{}'{}".format(self._tree.item(cell,"text")," (Cmd +)" if is_mac else ""), command=lambda:self.new_row(cell),accelerator=None if is_mac else "(Ctrl +)")
                 popup_menu.add_command(label="Remove '{}'{}".format(self._tree.item(cell,"text")," (Cmd -)" if is_mac else ""), command=lambda:self.remove_row(cell),accelerator=None if is_mac else "(Ctrl -)")
+                #--etason popup_menu.add_command(label="Erase '{}' {}".format(self._tree.item(cell,"text")," (Cmd -)" if is_mac else ""), command=lambda:self.clear_row(cell),accelerator=None if is_mac else "(Ctrl -)")
         # Let's get our sorting menus
         parent = cell if cell in ("",self.get_root_node()) else self._tree.parent(cell)
         if self.get_check_type(parent).lower() in ("dictionary","array"):
