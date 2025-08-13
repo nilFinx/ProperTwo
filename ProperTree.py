@@ -537,9 +537,9 @@ class ProperTree:
         if str(sys.platform) == "darwin": self.update_recents()
         self.check_dark_mode()
 
-        self.version_url = "https://raw.githubusercontent.com/corpnewt/ProperTree/master/Scripts/version.json"
+        self.version_url = "https://raw.githubusercontent.com/nilFinx/ProperTwo/master/Scripts/version.json"
         self.tex_url = "https://raw.githubusercontent.com/acidanthera/OpenCorePkg/master/Docs/Configuration.tex"
-        self.repo_url = "https://github.com/corpnewt/ProperTree"
+        self.repo_url = "https://github.com/nilFinx/ProperTwo"
 
         # Windows running python 2 seems to have issues with multiprocessing
         # if the case of the main script's name is incorrect:
